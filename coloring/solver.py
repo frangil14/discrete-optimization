@@ -41,6 +41,7 @@ def generar_matriz_adyacencia(bordes):
 
 from constraint import Problem, BacktrackingSolver
 import networkx as nx
+import matplotlib.pyplot as plt
 
 
 def color_graph(graph, num_colors):
@@ -110,9 +111,18 @@ def solve_it(input_data):
         parts = line.split()
         edges.append((int(parts[0]), int(parts[1])))
 
+    H = nx.Graph(edges)  # create a graph from an edge list
+
+    G = nx.petersen_graph()
+    subax1 = plt.subplot(121)
+    nx.draw(G, with_labels=True, font_weight='bold')
+    subax2 = plt.subplot(122)
+    nx.draw_shell(G, nlist=[range(5, 10), range(5)], with_labels=True, font_weight='bold')
+
+
     # print(edges)
     adj_matrix = generar_matriz_adyacencia(edges)
-    # print(adj_matrix)
+    print(adj_matrix)
 
     # Obtener el grado máximo
     grado_maximo = 0
@@ -121,7 +131,7 @@ def solve_it(input_data):
         if grado > grado_maximo:
             grado_maximo = grado
 
-    # print(grado_maximo)
+    print(grado_maximo)
     # Calcular la cota máxima
     num_colores = max(grado_maximo, 2)
     # print(num_colores)
@@ -131,7 +141,8 @@ def solve_it(input_data):
     my_list = list(matriz_a_lista(adj_matrix).values())
     print(matriz_a_lista(adj_matrix))
     # print(my_list)
-    colors = color_graph(matriz_a_lista(adj_matrix), num_colores)
+    nx.from_numpy
+    colors = color_graph(nx.from_numpy_matrix(np.matrix(adj_matrix)), num_colores)
     # solution = solve(my_list, np.arange(num_colores))
 
     # myKeys = list(solution.keys())
