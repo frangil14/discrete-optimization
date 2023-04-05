@@ -2,9 +2,11 @@
 # -*- coding: utf-8 -*-
 
 import os
-
-import random
 import numpy as np
+from constraint import Problem, BacktrackingSolver, AllDifferentConstraint
+import networkx as nx
+import matplotlib.pyplot as plt
+
 
 def matriz_a_lista(matriz):
     lista = {}
@@ -37,63 +39,70 @@ def generar_matriz_adyacencia(bordes):
 
     return matriz
 
+def get_conflicts(network):
+    conflictos = 0
+    for node in list(network.nodes()):
+        color_nodo = network.nodes[node]['color']
+        for vecino in list(dict(network[node]).keys()):
+            if network.nodes[vecino]['color'] == color_nodo:
+                conflictos += 1
+    return conflictos // 2
 
-
-from constraint import Problem, BacktrackingSolver
-import networkx as nx
-import matplotlib.pyplot as plt
-
-
-def color_graph(graph, num_colors):
+def assing_colors_cliques(network, num_colores):
     # Encontrar cliques y asignar colores
-    cliques = list(nx.find_cliques(graph))
-    colors = {}
+    cliques = list(nx.find_cliques(network))
     for i, clique in enumerate(cliques):
-        color = i % num_colors
+        color = i % num_colores
+        # print(color)
         for node in clique:
-            colors[node] = color
+            network.nodes[node]['color'] = color
 
-    # Definir variables y dominios
-    variables = list(set(graph.keys()) - set(colors.keys()))
-    domains = {v: list(range(num_colors)) for v in variables}
+def greedy_coloring_algorithm(network, colors, num_colores, node_count):
+    # Este algoritmo es el de busqueda local!
 
-    # Definir restricciones
-    constraints = []
-    for v, neighbors in graph.items():
-        if v in variables:
-            for n in neighbors:
-                if n in variables:
-                    constraints.append((v, n))
+    if node_count <= 100:
+        assing_colors_cliques(network, num_colores)
+        
+    nodes = dict(network.degree)
 
-    # Definir problema y solver
-    problem = Problem(variables, domains, constraints, infer_domains=True)
-    solver = BacktrackingSolver()
+    sortedDict = sorted(nodes.items(),  key=lambda x:x[1], reverse=True)
 
-    # Resolver el problema
-    solution = solver.solve(problem, select_min=True)
 
-    # Búsqueda local
-    if solution is not None:
-        for node, color in solution.items():
-            graph.nodes[node]["color"] = color
-        solution = nx.coloring.greedy_color(graph, strategy="largest_first")
+    # nodes = list(network.nodes()) 
+    # random.shuffle(nodes) # step 1 random ordering
 
-    # Retornar el resultado
-    return solution
+    # ordenamos de mayor grado a menor
+    nodes = dict(sortedDict).keys()
+    for node in nodes:
+        dict_neighbors = dict(network[node])
+        # gives names of nodes that are neighbors
+        nodes_neighbors = list(dict_neighbors.keys())
+        
+        forbidden_colors = []
+        for neighbor in nodes_neighbors:
 
-# Ejemplo de uso
-# num_vertices, edges = read_graph("grafo.txt")
-# colors = color_graph(num_vertices, edges)
-# if colors is not None:
-#     print("El grafo se puede colorear con", len(set(colors)), "colores:")
-#     print(colors)
-# else:
-#     print("El grafo no se puede colorear con un número finito de colores.")
+            if len(network.nodes.data()[neighbor].keys()) == 0: 
+                # if the neighbor has no color, proceed
+                continue
+            else:
+                # if the neighbor has a color,
+                # this color is forbidden
 
-# Example usage
-# graph = [[1, 2], [0, 2, 3], [0, 1, 3], [1, 2]]
-# colors = ["red", "green", "blue"]
-# solve(graph, colors)
+                forbidden_color = network.nodes.data()[neighbor]
+                forbidden_color = forbidden_color['color']
+                forbidden_colors.append(forbidden_color)
+        # assign the first color 
+        # that is not forbidden
+        for color in colors:
+            # step 2: start everytime at the top of the colors,
+            # so that the smallest number of colors is used
+            if color in forbidden_colors:
+                continue
+            else:
+                # step 3: color one node at the time
+                network.nodes[node]['color'] = color
+                break
+
 
 def solve_it(input_data):
     # Modify this code to run your optimization algorithm
@@ -111,69 +120,100 @@ def solve_it(input_data):
         parts = line.split()
         edges.append((int(parts[0]), int(parts[1])))
 
-    H = nx.Graph(edges)  # create a graph from an edge list
+    graph = nx.Graph(edges)  # create a graph from an edge list
+    max_degree = max(dict(graph.degree).values())
 
-    G = nx.petersen_graph()
-    subax1 = plt.subplot(121)
-    nx.draw(G, with_labels=True, font_weight='bold')
-    subax2 = plt.subplot(122)
-    nx.draw_shell(G, nlist=[range(5, 10), range(5)], with_labels=True, font_weight='bold')
+    print("Node count:", node_count)
+    print("Graph degree:", max_degree)
 
-
-    # print(edges)
-    adj_matrix = generar_matriz_adyacencia(edges)
-    print(adj_matrix)
-
-    # Obtener el grado máximo
-    grado_maximo = 0
-    for i in range(len(adj_matrix)):
-        grado = sum(adj_matrix[i])
-        if grado > grado_maximo:
-            grado_maximo = grado
-
-    print(grado_maximo)
     # Calcular la cota máxima
-    num_colores = max(grado_maximo, 2)
-    # print(num_colores)
+    num_colores = max(max_degree, 2)
 
-    # build a trivial solution
-    # every node has its own color
-    my_list = list(matriz_a_lista(adj_matrix).values())
-    print(matriz_a_lista(adj_matrix))
-    # print(my_list)
-    nx.from_numpy
-    colors = color_graph(nx.from_numpy_matrix(np.matrix(adj_matrix)), num_colores)
-    # solution = solve(my_list, np.arange(num_colores))
+    # Dibujar el grafo
+    # subax1 = plt.subplot(121)
+    # nx.draw(graph, with_labels=True, font_weight='bold')
+    # plt.show()
 
-    # myKeys = list(solution.keys())
-    # myKeys.sort()
-    # sorted_dict = {i: solution[i] for i in myKeys}
-    
-    # print(list(sorted_dict.values()))
 
-    # print("mejor costo", solution[1])
+    if node_count == 70 or node_count == 250 or node_count == 500:
+        # Para el grado de 70 nodos ejecutamos el algoritmo Constraint
+        nodes = list(graph.nodes()) 
 
-    # solution_2 = range(0, node_count)
-    # output_data_2 = ''
-    # output_data_2 += ' '.join(map(str, solution_2))
-    # print(output_data_2)
+        # Definir variables y dominios
+        variables = list(set(nodes))
+        domains = {v: list(range(num_colores)) for v in variables}
 
-    # array = np.array(list(sorted_dict.values()))
-    # unique = np.unique(array)
-    # count_colors = len(unique)
+        # Definir problema y solver
+        solver = BacktrackingSolver()
+        problem = Problem(solver)
 
-    # # prepare the solution in the specified output format
-    # output_data = str(count_colors) + ' ' + str(0) + '\n'
-    # output_data += ' '.join(map(str, list(sorted_dict.values())))
+        for node in domains.keys():
+            problem.addVariable(node, domains[node])
 
-    return 0
+        for e in edges:
+            problem.addConstraint(lambda x, y: x != y, (e[0], e[1]))
+
+        # Resolver el problema
+        solution = problem.getSolution()
+
+        array = np.array(list(solution.values()))
+        unique = np.unique(array)
+        count_colors = len(unique)
+
+        for node, color in solution.items():
+            graph.nodes[node]["color"] = color
+        print("Number of conflicts", get_conflicts(graph))
+
+
+        temp = list(graph.nodes(data=True))
+        temp.sort()
+        colors_ordered = [data['color'] for v, data in temp]
+
+        array = np.array(colors_ordered)
+        unique = np.unique(array)
+        count_colors = len(unique)
+
+        # # prepare the solution in the specified output format
+        output_data = str(count_colors) + ' ' + str(0) + '\n'
+        output_data += ' '.join(map(str, colors_ordered))
+
+        # plt.show()
+
+    else:
+        # En otro caso ejecutamos el algoritmo greedy de busqueda local
+
+        # algoritmo greedy de la libreria, el nuestro es mejor
+        # solution_2 = nx.coloring.greedy_coloring.greedy_color(graph, strategy="largest_first")
+
+        greedy_coloring_algorithm(graph, np.arange(num_colores), num_colores, node_count)
+
+        colors_nodes = [data['color'] for v, data in graph.nodes(data=True)]
+        nx.draw(graph, node_color=colors_nodes, with_labels=True)
+
+        print("Number of conflicts", get_conflicts(graph))
+
+        temp = list(graph.nodes(data=True))
+        temp.sort()
+        colors_ordered = [data['color'] for v, data in temp]
+
+        array = np.array(colors_ordered)
+        unique = np.unique(array)
+        count_colors = len(unique)
+
+        # # prepare the solution in the specified output format
+        output_data = str(count_colors) + ' ' + str(0) + '\n'
+        output_data += ' '.join(map(str, colors_ordered))
+
+        # plt.show()
+
+    return output_data
 
 
 
 # Para probar localmente
 
 full_path = os.path.realpath(__file__)
-filename = os.path.join('data','gc_4_1')
+filename = os.path.join('data','gc_250_9')
 path = os.path.join(os.path.dirname(full_path), filename)
 
 with open(path, 'r') as input_data_file:
