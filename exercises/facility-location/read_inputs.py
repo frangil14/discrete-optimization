@@ -1,6 +1,6 @@
 import pandas as pd
 import os
-from pulp import LpProblem, LpMinimize, LpVariable, LpBinary, lpSum, LpStatus, value, GLPK
+from pulp import LpProblem, LpMinimize, LpVariable, LpBinary, lpSum, LpStatus, value, GLPK, LpSolverDefault
 from utils import length
 
 import matplotlib.pyplot as plt
@@ -116,8 +116,30 @@ def get_solution(input_data, plot = False):
     for j in range(num_facilities):
         prob += lpSum([assignment_vars[(i,j)]*customer_demands[i] for i in range(num_customers)]) <= facility_capacities[j]*facility_vars[j]
 
-    # Resuelve el problema de optimización
-    prob.solve()
+
+    # NUEVAS REESTRICCIONES
+    for j in range(num_facilities):
+        prob += lpSum(assignment_vars[(i,j)] for i in range(num_customers)) <= facility_capacities[j]
+
+    # Restricción de selección
+    prob += lpSum(facility_vars[j] for j in range(num_facilities)) <= facility_count
+
+    # Agregar corte de Gomory
+    def gomory_cut_callback(model, solver):
+        fractional_vars = [v for v in model.variables() if v.varValue % 1 != 0]
+        for frac_var in fractional_vars:
+            frac_var_coeffs = value(frac_var) - int(value(frac_var))
+            frac_var_constr = lpSum([frac_var_coeffs * customer_facility_distances[i][j] * assignment_vars[i][j] for i in range(num_customers) for j in range(num_facilities)]) \
+                            >= frac_var_coeffs * facility_costs[frac_var.name.split('_')[1]]
+            yield frac_var_constr
+
+    solver = LpSolverDefault
+
+    solver.cut_callback = gomory_cut_callback
+
+#    Resuelve el problema de optimización
+    prob.solve(solver=solver)
+#    prob.solve()
 
     test = {}
     final_solution = {}
