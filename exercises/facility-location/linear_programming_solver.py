@@ -1,36 +1,9 @@
-import pandas as pd
-import os
-from pulp import LpProblem, LpMinimize, LpVariable, LpBinary, lpSum, LpStatus, value, GLPK, LpSolverDefault
-from utils import length
-
 import matplotlib.pyplot as plt
+import pandas as pd
+from pulp import LpProblem, LpMinimize, LpVariable, lpSum, LpStatus, LpSolverDefault
+from utils import length
 plt.style.use('ggplot')
 
-# def get_linked_customers(input_warehouse):
-#     '''
-#     Find customer ids that are served by the input warehouse.
-    
-#     Args:
-#         - input_warehouse: string (example: <Warehouse 21>)
-#     Out:
-#         - List of customers ids connected to the warehouse
-#     '''
-#     # Initialize empty list
-#     linked_customers = []
-    
-#     # Iterate through the xij decision variable
-#     for (k, v) in served_customer.items():
-#             # if input_warehouse == 'Warehouse 35':
-#             #     print(k,v, input_warehouse)
-#             #     print(v.varValue)
-            
-#             # Filter the input warehouse and positive variable values
-#             if k[1]==input_warehouse and v.varValue>0:
-                
-#                 # Customer is served by the input warehouse
-#                 linked_customers.append(k[0])
-
-#     return linked_customers
 
 def get_solution(input_data, plot = False):
 
@@ -72,7 +45,6 @@ def get_solution(input_data, plot = False):
         plt.xticks([])
         plt.yticks([])
         plt.show()
-
 
 
     # Warehouses list
