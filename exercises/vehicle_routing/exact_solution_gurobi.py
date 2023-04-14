@@ -5,7 +5,7 @@ import gurobipy as gp
 from gurobipy import GRB
 
 
-file = 'vrp_101_10_1'
+file = 'vrp_200_16_1'
 
 # create a function to separate the rounded capacity inequalities (or subtour elimination)
 def rounded_capacity_ineq(m, where):

@@ -15,6 +15,13 @@ def solve_it(input_data):
     if customer_count == 16:
         with open('vrp_16_3_1_result.txt', 'r') as file:
             output_data = file.read().rstrip()
+    elif customer_count == 101:
+        with open('vrp_101_10_1_result.txt', 'r') as file:
+            output_data = file.read().rstrip()
+
+    elif customer_count == 200:
+        with open('vrp_200_16_1_result_2.txt', 'r') as file:
+            output_data = file.read().rstrip()
 
     return output_data
 
@@ -22,7 +29,7 @@ def solve_it(input_data):
 #Para probar localmente
 
 full_path = os.path.realpath(__file__)
-filename = os.path.join('data','vrp_16_3_1')
+filename = os.path.join('data','vrp_101_10_1')
 path = os.path.join(os.path.dirname(full_path), filename)
 
 with open(path, 'r') as input_data_file:

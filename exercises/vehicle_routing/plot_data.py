@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import os
 
-file = 'vrp_101_10_1'
+file = 'vrp_421_41_1'
 
 
 full_path = os.path.realpath(__file__)
