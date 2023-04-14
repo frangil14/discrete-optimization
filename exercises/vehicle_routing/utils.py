@@ -3,25 +3,31 @@ from pathlib import Path # if you haven't already done so
 file = Path(__file__).resolve()
 parent, root = file.parent, file.parents[1]
 sys.path.append(str(root))
-
 # Additionally remove the current file's directory from sys.path
 try:
     sys.path.remove(str(parent))
 except ValueError: # Already removed
     pass
-import numpy as np
-from facility_location.utils import length
-import networkx as nx
-import matplotlib.pyplot as plt
-import gurobipy as gp
-from gurobipy import GRB
-import math
 
+import gurobipy as gp
+import matplotlib.pyplot as plt
+import math
+import numpy as np
+import networkx as nx
+from gurobipy import GRB
+from random import randint
+from facility_location.utils import length
 
 
 def plot_solution(coords_list, solution= None, different_points=[],labels=[0]):
+
     # Define los colores que quieres utilizar para representar cada etiqueta
-    colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k','C0','C1','C2','C3','C4','C5','C6','C7','C8']
+    # colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k','C0','C1','C2','C3','C4','C5','C6','C7','C8']
+    colors = []
+    n = len(np.unique(labels))
+    for i in range(n):
+        colors.append('#%06X' % randint(0, 0xFFFFFF))
+
     coords_list_np = np.array(coords_list)
 
     # Crea la figura y grafica las coordenadas
@@ -82,20 +88,20 @@ def rounded_capacity_ineq(m, where, vehicle_capacity):
                     m.cbLazy( gp.quicksum( m._x[e] for e in inner_edges ) <= len(component) - 1 )
 
 # function for calculating distance between two pins
-def _distance_calculator(_df):
+def distance_calculator(df):
     
-    _distance_result = np.zeros((len(_df),len(_df)))
+    distance_result = np.zeros((len(df),len(df)))
     
-    for i in range(len(_df)):
-        for j in range(len(_df)):
+    for i in range(len(df)):
+        for j in range(len(df)):
             
             # calculate distance of all pairs
-            _distance = length(_df['x_coor'].iloc[i],_df['y_coor'].iloc[i],
-                            _df['x_coor'].iloc[j],_df['y_coor'].iloc[j])
+            distance = length(df['x_coor'].iloc[i],df['y_coor'].iloc[i],
+                            df['x_coor'].iloc[j],df['y_coor'].iloc[j])
             # append distance to result list
-            _distance_result[i][j] = _distance
+            distance_result[i][j] = distance
     
-    return _distance_result
+    return distance_result
 
 
 # Crear una función de distancia que tenga en cuenta la capacidad
@@ -111,15 +117,15 @@ def capacity_distance(point1_xcoor, point1_ycoor, point2_xcoor, point2_ycoor, po
 # function for calculating distance between two pins having into account the Capacity
 def distance_calculator_constrained(df, vehicle_capacity):
     
-    _distance_result = np.zeros((len(df),len(df)))
+    distance_result = np.zeros((len(df),len(df)))
     
     for i in range(len(df)):
         for j in range(len(df)):
             
             # calculate distance of all pairs
-            _distance = capacity_distance(df['x_coor'].iloc[i],df['y_coor'].iloc[i],
+            distance = capacity_distance(df['x_coor'].iloc[i],df['y_coor'].iloc[i],
                             df['x_coor'].iloc[j],df['y_coor'].iloc[j], df['demand'].iloc[i], df['demand'].iloc[j], vehicle_capacity)
             # append distance to result list
-            _distance_result[i][j] = _distance
+            distance_result[i][j] = distance
     
-    return _distance_result
+    return distance_result

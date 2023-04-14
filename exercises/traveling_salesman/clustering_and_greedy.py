@@ -6,7 +6,7 @@ from sklearn.cluster import DBSCAN
 from utils import plot_solution, calcular_matriz_distancias_bloques, get_score
 
 
-def grouping_and_greedy(coords_list, total_distance_matrix):
+def clustering_and_greedy(coords_list, total_distance_matrix):
 
     max = total_distance_matrix.max()
 

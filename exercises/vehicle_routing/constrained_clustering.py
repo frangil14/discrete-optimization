@@ -20,7 +20,7 @@ def get_vecino_cercano_con_capacidad(distances_test, customer_demand, vehicle_ca
 
 
 
-file = 'vrp_200_16_1'
+file = 'vrp_421_41_1'
 
 full_path = os.path.realpath(__file__)
 filename = os.path.join('data',file)
@@ -52,11 +52,14 @@ df_copy = df_copy.drop(0)
 
 demanda_total = df_copy['demand'].sum()
 
+print(demanda_total, vehicle_count, vehicle_capacity)
+
 # Crear la matriz de distancia con la función de distancia personalizada
 distance_matrix = distance_calculator_constrained(df_copy, vehicle_capacity)
 
 # Crear el objeto k-Medoids y ejecutar el algoritmo
-kmedoids_instance = kmedoids(distance_matrix, initial_index_medoids=list(range(0,vehicle_count)))
+kmedoids_instance = kmedoids(distance_matrix, initial_index_medoids=list(range(0,vehicle_count-2)))
+print('Clustering started')
 kmedoids_instance.process()
 
 # Obtener los grupos y los medoides
@@ -97,7 +100,6 @@ flag = True
 # Reasignar clientes para equilibrar la capacidad de los grupos
 while flag:
     for group, demand in dict_recluster.items():
-        print(group, demand)
         if demand>vehicle_capacity:
             # si estoy excedido
             # Tomar el cliente con la mayor demanda
@@ -111,13 +113,10 @@ while flag:
                     medoide = medoides[g]
                     medoid_coordenates = (df_copy.iloc[medoides[g]]['x_coor'],df_copy.iloc[medoides[g]]['y_coor'])
                     customer_coordenates = (df_copy.iloc[customer_index]['x_coor'],df_copy.iloc[customer_index]['y_coor'])
-                    print(medoid_coordenates)
-                    print(customer_coordenates)
                     distances[g] = length(df_copy.iloc[customer_index]['x_coor'],df_copy.iloc[customer_index]['y_coor'], df_copy.iloc[medoides[g]]['x_coor'],df_copy.iloc[medoides[g]]['y_coor'])
 
 
             vecino_cercano = get_vecino_cercano_con_capacidad(distances, customer_demand, vehicle_capacity)
-            print(vecino_cercano)
             if vecino_cercano is None:
                 customer_demand = df_copy[(df_copy["label"] == group)]['demand'].min()
                 customer_index = df_copy[(df_copy["label"] == group) & (df_copy["demand"] == customer_demand)].head(1).index
@@ -126,9 +125,7 @@ while flag:
                     if g != group:
                         medoide = medoides[g]
                         medoid_coordenates = (df_copy.iloc[medoides[g]]['x_coor'],df_copy.iloc[medoides[g]]['y_coor'])
-                        print(medoid_coordenates)
                         customer_coordenates = (df_copy.iloc[customer_index]['x_coor'],df_copy.iloc[customer_index]['y_coor'])
-                        print(customer_coordenates)
                         distances[g] = length(df_copy.iloc[customer_index]['x_coor'],df_copy.iloc[customer_index]['y_coor'], df_copy.iloc[medoides[g]]['x_coor'],df_copy.iloc[medoides[g]]['y_coor'])
                 # print(distances)
                 vecino_cercano = get_vecino_cercano_con_capacidad(distances, customer_demand, vehicle_capacity)
@@ -154,17 +151,12 @@ while flag:
 
 
 
-coords_list = [(row['x_coor'],row['y_coor']) for index, row in df_copy.iterrows()]
-labels = [int(row['label']) for index, row in df_copy.iterrows()]
-
-# plot_solution(coords_list,labels=labels)
-
 
 # asignar los clusters finales al dataframe
-df_copy['label'] = 0
+# df_copy['label'] = 0
 
-for i in range(len(df_copy)):
-    df_copy['label'].iloc[i] = labels[i]
+# for i in range(len(df_copy)):
+#     df_copy['label'].iloc[i] = labels[i]
 
 
 solutions = {}
@@ -177,28 +169,35 @@ for i in range(len(grupos)):
     distance_matrix = _distance_calculator(temp_df)
     temp_df.reset_index(inplace=True)
     print(temp_df)
+    print(len(temp_df.index))
 
-    permutation0, distance = solve_tsp_simulated_annealing(distance_matrix)
-    initial_cost = distance
-    final_solution = permutation0
+    if (len(temp_df.index)>2):
 
-    for j in range(5):
+        permutation0, distance = solve_tsp_simulated_annealing(distance_matrix)
+        initial_cost = distance
+        final_solution = permutation0
 
-        print(f'Iteration number {j}')
-        permutation, distance = solve_tsp_local_search(distance_matrix, x0=permutation0)
+        for j in range(5):
 
-        if distance < initial_cost:
-            initial_cost = distance
-            print(initial_cost)
-            final_solution = permutation
+            print(f'Iteration number {j}')
+            permutation, distance = solve_tsp_local_search(distance_matrix, x0=permutation0)
 
-    permutation_original_index = []
+            if distance < initial_cost:
+                initial_cost = distance
+                print(initial_cost)
+                final_solution = permutation
 
-    for item in final_solution:
-        temp = temp_df.iloc[item]['level_0']
-        permutation_original_index.append(int(temp))
+        permutation_original_index = []
 
-    solutions[i] = ( permutation_original_index, initial_cost)
+        for item in final_solution:
+            temp = temp_df.iloc[item]['level_0']
+            permutation_original_index.append(int(temp))
+
+        solutions[i] = ( permutation_original_index, initial_cost)
+
+    else:
+        customers = [int(row['index']) for index, row in temp_df.iterrows()]
+        solutions[i] = ( customers, 0)
 
 
 cost = 0
@@ -218,3 +217,8 @@ print(outputData)
 file = open(f"{file}_result.txt", "a")
 a = file.write(outputData)
 file.close()
+
+coords_list = [(row['x_coor'],row['y_coor']) for index, row in df_copy.iterrows()]
+labels = [int(row['label']) for index, row in df_copy.iterrows()]
+
+plot_solution(coords_list,labels=labels)
